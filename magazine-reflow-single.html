@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111">
+<title>Magazine Reflow — PDF to Mobile Magazine</title>
+<style>
+:root{--bg:#eeeae1;--paper:#fffdf8;--ink:#181714;--muted:#756f65;--line:#d8d1c5;--accent:#b33f22;--scale:1}
+.dark{--bg:#11110f;--paper:#1b1916;--ink:#f4efe6;--muted:#aaa297;--line:#39352f;--accent:#e56a45}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Georgia,"Times New Roman",serif}
+button{font:inherit;color:inherit}.bar{position:sticky;top:0;z-index:30;height:62px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;background:color-mix(in srgb,var(--bg) 93%,transparent);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.logo{font:800 12px Arial;letter-spacing:.16em}.logo span{opacity:.45;font-weight:400}.tools{display:flex;gap:7px}.tool{border:1px solid var(--line);background:var(--paper);border-radius:50px;padding:8px 12px;cursor:pointer}
+.home{max-width:1000px;margin:auto;padding:70px 20px}.hero{text-align:center;max-width:850px;margin:auto}.eyebrow{font:700 11px Arial;letter-spacing:.18em;color:var(--accent)}h1{font-size:clamp(48px,9vw,96px);line-height:.91;letter-spacing:-.055em;margin:20px 0}h1 i{font-weight:400}.lead{font-size:19px;line-height:1.5;color:var(--muted);max-width:650px;margin:28px auto 38px}
+.drop{min-height:240px;border:2px dashed var(--line);border-radius:28px;background:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 25px 70px #00000012}.drop.drag{border-color:var(--accent);transform:translateY(-2px)}.drop input{display:none}.plus{font:300 54px Arial;color:var(--accent)}.drop b{font:700 18px Arial}.drop small{font:14px Arial;color:var(--muted);margin-top:8px}.status{margin:18px auto;padding:12px 15px;border:1px solid var(--line);border-radius:14px;background:var(--paper);font:14px Arial;max-width:700px}.hidden{display:none!important}
+.reader{max-width:920px;margin:auto;padding:20px 14px 80px}.readerHead{position:sticky;top:62px;z-index:20;padding:8px 0 18px;display:flex;align-items:center;gap:15px;background:linear-gradient(var(--bg) 72%,transparent)}.back{border:1px solid var(--line);background:var(--paper);border-radius:50px;padding:9px 13px;cursor:pointer}.rtitle{font:700 13px Arial;text-transform:uppercase;letter-spacing:.08em}.rmeta{font:12px Arial;color:var(--muted);margin-top:3px}
+.page{background:var(--paper);max-width:800px;margin:20px auto 55px;padding:clamp(24px,5vw,62px);box-shadow:0 25px 80px #00000012;overflow:hidden}.num{font:700 10px Arial;color:var(--muted);letter-spacing:.12em;margin-bottom:24px}.visual{margin:-62px -62px 38px}.visual img{display:block;width:100%;height:auto;max-height:75vh;object-fit:cover}.visualNote{font:11px Arial;color:var(--muted);margin-top:7px;text-align:center}.text{max-width:690px;margin:auto}.headline{font-size:calc(clamp(38px,6vw,68px)*var(--scale));line-height:.94;letter-spacing:-.045em;margin:25px 0 15px}.dek{font-size:calc(24px*var(--scale));line-height:1.25;color:var(--muted);margin:0 0 30px}.sub{font-size:calc(29px*var(--scale));line-height:1.1;margin:34px 0 15px}.body{font-size:calc(20px*var(--scale));line-height:1.65;margin:0 0 21px}.body+ .body{margin-top:-9px}.caption{font:12px/1.4 Arial;color:var(--muted);margin:8px 0 25px}.ocr{border-left:3px solid var(--accent);padding-left:12px}.original{width:100%;display:block;margin-top:30px}.progress{position:fixed;bottom:0;left:0;height:3px;background:var(--accent);width:0;z-index:50;transition:width .1s}
+@media(max-width:650px){.home{padding:50px 16px}.lead{font-size:17px}.page{margin:10px 0 32px;padding:30px 20px;box-shadow:none}.visual{margin:-30px -20px 28px}.body{font-size:calc(18px*var(--scale))}.reader{padding-left:0;padding-right:0}.readerHead{padding-left:12px;padding-right:12px}.page .num{margin-bottom:20px}}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="logo">MAGAZINE<span>REFLOW</span></div>
+  <div class="tools">
+    <button class="tool" id="theme">☾</button>
+    <button class="tool" id="minus">A−</button>
+    <button class="tool" id="plusFont">A+</button>
+  </div>
+</header>
+
+<section id="home" class="home">
+  <div class="hero">
+    <div class="eyebrow">PDF → MOBILE MAGAZINE</div>
+    <h1>Turn a PDF into a<br><i>beautiful phone edition.</i></h1>
+    <p class="lead">Upload a magazine and this browser-only app extracts its text, detects headings and columns, and keeps the original page artwork as a visual reference. Nothing is uploaded to a server.</p>
+    <label class="drop" id="drop">
+      <input id="file" type="file" accept=".pdf,application/pdf">
+      <div class="plus">＋</div><b>Choose your PDF magazine</b><small>or drag and drop it here</small>
+    </label>
+    <div id="status" class="status hidden"></div>
+  </div>
+</section>
+
+<section id="reader" class="reader hidden">
+  <div class="readerHead">
+    <button class="back" id="back">← Library</button>
+    <div><div class="rtitle" id="title"></div><div class="rmeta" id="meta"></div></div>
+  </div>
+  <div id="pages"></div>
+</section>
+<div class="progress" id="progress"></div>
+
+<script type="module">
+import * as pdfjsLib from "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.1.200/build/pdf.mjs";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.1.200/build/pdf.worker.mjs";
+
+const $=id=>document.getElementById(id);
+const file=$("file"),drop=$("drop"),status=$("status"),home=$("home"),reader=$("reader"),pages=$("pages");
+let scale=1, currentTitle="";
+
+function msg(t,error=false){status.textContent=t;status.classList.remove("hidden");status.style.borderColor=error?"#c44":"var(--line)"}
+function clean(s){return s.replace(/\u00ad/g,"").replace(/-\s*\n\s*(?=[a-z])/g,"").replace(/\s+/g," ").trim()}
+function words(s){return (s.match(/\b[\w’'-]+\b/g)||[]).length}
+function esc(s){let d=document.createElement("div");d.textContent=s;return d.innerHTML}
+
+/* Group PDF text items into lines, then lines into blocks. PDF.js exposes
+   getTextContent() for browser-side extraction. */
+function extractBlocks(tc,viewport){
+  const items=tc.items.filter(x=>x.str&&x.str.trim());
+  const lines=[];
+  for(const it of items){
+    const tx=it.transform, x=tx[4], y=tx[5], h=Math.abs(tx[3])||10;
+    const last=lines[lines.length-1];
+    if(last && Math.abs(last.y-y)<Math.max(3,h*.45) && x>=last.x2-3){
+      last.text+=" "+it.str; last.x2=x+it.width; last.size=Math.max(last.size,h);
+    }else lines.push({text:it.str,x,x2:x+it.width,y,size:h});
+  }
+  lines.sort((a,b)=>a.y-b.y||a.x-b.x);
+  const blocks=[];
+  for(const ln of lines){
+    const last=blocks[blocks.length-1];
+    if(last && Math.abs(last.lastY-ln.y)<Math.max(8,ln.size*1.3) && ln.x<=last.x2+20){
+      last.text+=" "+ln.text;last.lastY=ln.y;last.x2=Math.max(last.x2,ln.x2);last.size=Math.max(last.size,ln.size);
+    }else blocks.push({text:ln.text,lastY:ln.y,x:ln.x,x2:ln.x2,size:ln.size});
+  }
+  return blocks.map(b=>({text:clean(b.text),x:b.x,x2:b.x2,y:b.lastY,size:b.size}));
+}
+
+function classify(b,pageWidth,area){
+  const w=words(b.text);
+  if(w<=9 && b.size>22)return "headline";
+  if(w<=25 && b.size>15)return "dek";
+  if(b.size>15 || (w<18 && b.size>12))return "sub";
+  return "body";
+}
+
+async function renderOriginal(page,scale=1.25){
+  const viewport=page.getViewport({scale});
+  const canvas=document.createElement("canvas");
+  const ratio=Math.min(window.devicePixelRatio||1,2);
+  canvas.width=Math.floor(viewport.width*ratio);
+  canvas.height=Math.floor(viewport.height*ratio);
+  canvas.style.width="100%";
+  canvas.style.height="auto";
+  const ctx=canvas.getContext("2d",{alpha:false});
+  await page.render({canvasContext:ctx,viewport,transform:ratio!==1?[ratio,0,0,ratio,0,0]:null}).promise;
+  return canvas.toDataURL("image/jpeg",.78);
+}
+
+async function convert(f){
+  if(!f||!f.name.toLowerCase().endsWith(".pdf"))return msg("Please select a PDF.",true);
+  if(f.size>120*1024*1024)return msg("For a browser-only app, please keep the PDF below 120 MB.",true);
+  msg("Opening PDF…");
+  try{
+    const buf=new Uint8Array(await f.arrayBuffer());
+    const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+    currentTitle=f.name.replace(/\.pdf$/i,"").replace(/[_-]+/g," ").trim()||"Magazine";
+    $("title").textContent=currentTitle;
+    $("meta").textContent=pdf.numPages+" pages";
+    pages.innerHTML="";
+    for(let n=1;n<=pdf.numPages;n++){
+      msg(`Converting page ${n} of ${pdf.numPages}…`);
+      const p=await pdf.getPage(n);
+      const vp=p.getViewport({scale:1});
+      const tc=await p.getTextContent();
+      let blocks=extractBlocks(tc,vp);
+      /* Read two-column magazines column-by-column when the PDF text positions
+         clearly form two groups. */
+      const centers=blocks.map(b=>(b.x+b.x2)/2);
+      const left=centers.filter(x=>x<vp.width*.47).length;
+      const right=centers.filter(x=>x>vp.width*.53).length;
+      if(left>=3&&right>=3){
+        const L=blocks.filter(b=>(b.x+b.x2)/2<vp.width*.5).sort((a,b)=>a.y-b.y);
+        const R=blocks.filter(b=>(b.x+b.x2)/2>=vp.width*.5).sort((a,b)=>a.y-b.y);
+        blocks=[...L,...R];
+      }else blocks.sort((a,b)=>a.y-b.y||a.x-b.x);
+
+      const article=document.createElement("article");
+      article.className="page";
+      const num=document.createElement("div");num.className="num";num.textContent=String(n).padStart(2,"0");
+      article.appendChild(num);
+
+      /* Keep the original page artwork. This is important for magazines whose
+         photography/illustrations are positioned outside ordinary text flow. */
+      const visual=document.createElement("div");visual.className="visual";
+      const image=document.createElement("img");
+      image.src=await renderOriginal(p,Math.min(1.35,1200/vp.width));
+      image.alt=`Original magazine page ${n}`;
+      visual.appendChild(image);
+      const note=document.createElement("div");note.className="visualNote";note.textContent="Original page artwork";
+      visual.appendChild(note);
+      article.appendChild(visual);
+
+      const text=document.createElement("div");text.className="text";
+      if(blocks.length){
+        blocks.forEach((b,i)=>{
+          const el=document.createElement((()=>{let c=classify(b,vp.width,vp.width*vp.height);return c==="headline"?"h2":c==="sub"?"h3":"p"})());
+          const c=classify(b,vp.width,vp.width*vp.height);
+          el.className=c+(tc.items.length?"":" ocr");
+          el.textContent=b.text;
+          text.appendChild(el);
+        });
+      }else{
+        const pEl=document.createElement("p");pEl.className="body";pEl.textContent="This page does not contain extractable text. The original page artwork above has been preserved.";text.appendChild(pEl);
+      }
+      article.appendChild(text);
+      pages.appendChild(article);
+    }
+    home.classList.add("hidden");reader.classList.remove("hidden");status.classList.add("hidden");
+    window.scrollTo({top:0,behavior:"instant"});
+  }catch(e){console.error(e);msg("Could not read this PDF in the browser. Try another PDF or a smaller file.",true)}
+}
+
+file.onchange=e=>convert(e.target.files[0]);
+["dragenter","dragover"].forEach(x=>drop.addEventListener(x,e=>{e.preventDefault();drop.classList.add("drag")}));
+["dragleave","drop"].forEach(x=>drop.addEventListener(x,e=>{e.preventDefault();drop.classList.remove("drag")}));
+drop.addEventListener("drop",e=>convert(e.dataTransfer.files[0]));
+$("back").onclick=()=>{reader.classList.add("hidden");home.classList.remove("hidden");window.scrollTo({top:0,behavior:"instant"})};
+$("plusFont").onclick=()=>{scale=Math.min(1.35,scale+.05);document.documentElement.style.setProperty("--scale",scale)};
+$("minus").onclick=()=>{scale=Math.max(.85,scale-.05);document.documentElement.style.setProperty("--scale",scale)};
+$("theme").onclick=()=>{document.documentElement.classList.toggle("dark");localStorage.dark=document.documentElement.classList.contains("dark")?"1":"0"};
+if(localStorage.dark==="1")document.documentElement.classList.add("dark");
+addEventListener("scroll",()=>{let h=document.documentElement.scrollHeight-innerHeight;$("progress").style.width=(h>0?(scrollY/h)*100:0)+"%"});
+</script>
+</body>
+</html>
